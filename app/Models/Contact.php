@@ -12,7 +12,7 @@ class Contact extends Model
 
     protected$primaryKey = 'id';
 
-    protected $fillable = ['name', 'contact', 'email'];
+    protected $fillable = ['name', 'contact', 'email', 'user_id'];
 
     protected $dates = ['deleted_at'];
 

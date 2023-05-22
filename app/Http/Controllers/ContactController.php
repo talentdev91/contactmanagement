@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Contact;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class ContactController extends Controller
 {
@@ -22,39 +25,47 @@ class ContactController extends Controller
     public function store(Request $request)
     {
         $this->validate($request, [
-            'name' => 'required|min:5|unique:contacts,name',
+            'name' => 'required|min:5',
             'contact' => 'required|numeric|digits:9|unique:contacts,contact',
-            'email' => 'required|email|unique:contacts'
+            'email' => 'required|email|unique:contacts,email'
         ]);
-
-        $contact = Contact::create($request->all());
+        
+        $contact = new Contact($request->all()); // Create a new Contact object
+        $contact->user_id = Auth::id(); // Assign the authenticated user ID to the user_id field
+        $contact->save(); // Save the new contact record to the database
 
         return redirect()->route('contacts.index')->with('success', 'Contact added successfully.');
-    }
-
-    public function show($id)
-    {
-        $contact = Contact::find($id);
-
-        return view('contacts.show', compact('contact'));
     }
 
     public function edit($id)
     {
         $contact = Contact::find($id);
-
         return view('contacts.edit', compact('contact'));
+    }
+
+    public function scopeExcludeId($query, $id)
+    {
+        return $query->where('id', '<>', $id);
     }
 
     public function update(Request $request, $id)
     {
+        $contact = Contact::find($id);
         $this->validate($request, [
-            'name' => 'required|min:5|unique:contacts,name',
-            'contact' => 'required|numeric|digits:9|unique:contacts,contact',
-            'email' => 'required|email|unique:contacts,email,' . $id
+            'name' => 'required|min:5' . $contact->id,
+            'contact' => [
+                'required',
+                'numeric',
+                'digits:9',
+                Rule::unique('contacts', 'contact')->ignore($contact->id)
+            ],
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('contacts', 'email')->ignore($contact->id)
+            ]
         ]);
 
-        $contact = Contact::find($id);
         $contact->fill($request->all())->save();
 
         return redirect()->route('contacts.index')->with('success', 'Contact updated successfully.');

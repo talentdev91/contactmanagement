@@ -20,6 +20,7 @@ class CreateContactsTable extends Migration
             $table->string('email')->unique();
             $table->softDeletes();
             $table->timestamps();
+            $table->integer('user_id')->nullable()->default(null); // set to null by default
         });
     }
 
